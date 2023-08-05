@@ -33,17 +33,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "analyzer"
-version = "0.1.0"
-dependencies = [
- "brotli-decompressor",
- "flate2",
- "log",
- "syslog",
- "zstream",
-]
-
-[[package]]
 name = "bitflags"
 version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -248,6 +237,17 @@ name = "pkg-config"
 version = "0.3.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26072860ba924cbfa98ea39c8c19b4dd6a4a25423dbdf219c1eca91aa0cf6964"
+
+[[package]]
+name = "prism"
+version = "0.1.0"
+dependencies = [
+ "brotli-decompressor",
+ "flate2",
+ "log",
+ "syslog",
+ "zstream",
+]
 
 [[package]]
 name = "regex"
