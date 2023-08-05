@@ -1,2 +1,2 @@
 # prism
-An eCap based http(s) content analisys and adaptation framework.
+An eCap based http(s) content analysis and adaptation framework.
