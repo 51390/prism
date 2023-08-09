@@ -74,9 +74,8 @@ impl RawDataReader {
         let mut temp_buf = vec![0; buf.len()];
         let result = self.reader.borrow_mut().read(temp_buf.as_mut_slice());
         match result {
-            Ok(_bytes) => {
-                self.inner_buffer.borrow_mut().extend(temp_buf.as_slice());
-                info!("RDR -> IB -> {}", self.inner_buffer.borrow().len());
+            Ok(bytes) => {
+                self.inner_buffer.borrow_mut().extend(temp_buf[0..bytes].to_vec());
                 buf.copy_from_slice(temp_buf.as_slice());
             },
             _ => (),
@@ -145,7 +144,6 @@ impl Buffer {
         self.is_done = true;
         info!("Transaction {} is set as done for uri: {}", self.id, self.uri);
         info!("Data reader contains {} bytes.", self.data_reader.extract().len());
-        info!("Data reader contains this in its buffer: {}", String::from_utf8(self.data_reader.extract()).unwrap());
     }
 
     pub fn write_bytes(&mut self, data: &[u8]) {
