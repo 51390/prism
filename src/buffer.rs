@@ -1,4 +1,5 @@
 use zstream::{Decoder,Encoder};
+use std::cell::RefCell;
 use std::cmp::min;
 use std::io::prelude::*;
 use std::vec::Vec;
@@ -53,12 +54,72 @@ pub struct Buffer {
     pub encoder: Encoder,
     pub decoder_sender: Sender<Vec<u8>>,
     pub error: bool,
+    pub data_reader: std::rc::Rc<RawDataReader>,
+}
+
+pub struct RawDataReader {
+    pub reader: RefCell<Decoder>,
+    inner_buffer: RefCell<Vec<u8>>,
+}
+
+impl RawDataReader {
+    pub fn new(reader: Decoder) -> Self {
+        RawDataReader {
+            reader: RefCell::new(reader),
+            inner_buffer: RefCell::new(Vec::<u8>::new()),
+        }
+    }
+
+    pub fn read(&self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let mut temp_buf = vec![0; buf.len()];
+        let result = self.reader.borrow_mut().read(temp_buf.as_mut_slice());
+        match result {
+            Ok(_bytes) => {
+                buf.copy_from_slice(temp_buf.as_slice());
+                self.inner_buffer.borrow_mut().extend(temp_buf);
+            },
+            _ => (),
+        };
+
+        result
+    }
+
+    pub fn extract(&self) -> Vec<u8> {
+        self.inner_buffer.borrow().to_vec()
+    }
+}
+
+pub struct RawDataWrapper {
+    reader: std::rc::Rc<RawDataReader>,
+}
+
+impl RawDataWrapper {
+    pub fn new(reader: std::rc::Rc<RawDataReader>) -> Self {
+        RawDataWrapper { reader: reader }
+    }
+}
+
+impl Read for RawDataWrapper {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        self.reader.read(buf)
+    }
+
 }
 
 impl Buffer {
     pub fn new(id: i64, uri: String, encoding: Option<&String>) -> Buffer {
         let (bytes_sender, bytes_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
         let (decoder_sender, decoder_receiver) : (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
+
+        let data_reader = std::rc::Rc::new(
+            RawDataReader::new(
+                Decoder::new_with_size(
+                    BufferReader { id: id, name: "input reader".to_string(), receiver: decoder_receiver, pending: Vec::<u8>::new() },
+                    INPUT_BUFFER_SIZE
+                )
+            )
+        );
+        let wrapper = RawDataWrapper::new(data_reader.clone());
 
         Buffer {
             id: id,
@@ -70,14 +131,12 @@ impl Buffer {
             bytes_sender: bytes_sender,
             bytes_receiver: bytes_receiver,
             encoder: Encoder::new_with_size(
-                Decoder::new_with_size(
-                    BufferReader { id: id, name: "input reader".to_string(), receiver: decoder_receiver, pending: Vec::<u8>::new() },
-                    INPUT_BUFFER_SIZE
-                ),
+                wrapper,
                 ENCODER_BUFFER_SIZE
             ),
             decoder_sender: decoder_sender,
             error: false,
+            data_reader: data_reader,
         }
     }
 
