@@ -143,6 +143,7 @@ impl Buffer {
     pub fn done(&mut self) {
         self.is_done = true;
         info!("Transaction {} is set as done for uri: {}", self.id, self.uri);
+        info!("Data reader contains this in its buffer:\n{}", String::from_utf8(self.data_reader.extract()).unwrap());
     }
 
     pub fn write_bytes(&mut self, data: &[u8]) {
