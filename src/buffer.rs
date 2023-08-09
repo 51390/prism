@@ -76,6 +76,7 @@ impl RawDataReader {
         match result {
             Ok(_bytes) => {
                 self.inner_buffer.borrow_mut().extend(temp_buf.as_slice());
+                info!("RDR -> IB -> {}", self.inner_buffer.borrow().len());
                 buf.copy_from_slice(temp_buf.as_slice());
             },
             _ => (),
