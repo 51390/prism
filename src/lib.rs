@@ -203,8 +203,9 @@ pub extern "C" fn cleanup(id: i64) {
         None => (),
     };
 
-    info!("{} & {} transactions currently active. Capacities @ {} & {}",
-      buffers.responses.len(), buffers.headers.len(), buffers.responses.capacity(), buffers.headers.capacity(),
+    info!("Cleanup {}: {} & {} transactions currently active. Capacities @ {} & {}",
+      id, buffers.responses.len(), buffers.headers.len(), buffers.responses.capacity(),
+      buffers.headers.capacity()
     );
 }
 
