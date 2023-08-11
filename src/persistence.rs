@@ -1,4 +1,5 @@
 use crate::buffer::Buffer;
+use log::warn;
 use std::result::Result;
 use serde::Serialize;
 
@@ -43,13 +44,28 @@ impl Backend for Elasticsearch {
         };
         let json = serde_json::to_string(&document).unwrap();
         let id = data.id;
-        let target = format!(
+        let endpoint = format!(
             "{}://{}:{}/{}/_doc/{}",
             self.protocol, self.hostname, self.port, self.index, id
         );
-        let response = self.client.put(target).
+        match self.client.put(endpoint).
             header("Content-Type", "application/json").
-            body(json).send().unwrap();
-        Ok(())
+            body(json).send() {
+            Ok(response) => {
+                let status = response.status();
+                let request_ok = [
+                    reqwest::StatusCode::OK,
+                    reqwest::StatusCode::CREATED
+                ].contains(&status);
+                if !request_ok {
+                    warn!("Failed persisting data for transaction no. {} (http status {})", id, status);
+                }
+                Ok(())
+            },
+            Err(e) => {
+                warn!("Failed persisting data for transaction no. {} (error: {})", id, e);
+                Err(())
+            },
+        }
     }
 }
