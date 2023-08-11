@@ -108,7 +108,7 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    pub fn new(id: i64, uri: String, method:String, encoding: Option<&String>) -> Buffer {
+    pub fn new(id: i64, method:String, uri: String, encoding: Option<&String>) -> Buffer {
         let (bytes_sender, bytes_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
         let (decoder_sender, decoder_receiver) : (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
 
