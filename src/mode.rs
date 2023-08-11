@@ -1,4 +1,4 @@
-use std::fmt::{Display,Formatter,Result};
+use std::fmt::{Display, Formatter, Result};
 
 pub enum Mode {
     REQMOD,
@@ -26,5 +26,3 @@ impl Display for Mode {
         write!(f, "{}", value)
     }
 }
-
-

@@ -1,13 +1,13 @@
-use zstream::{Decoder,Encoder};
+use log::{error, info};
 use std::cell::RefCell;
 use std::cmp::min;
 use std::io::prelude::*;
+use std::sync::mpsc::{channel, Receiver, SendError, Sender};
 use std::vec::Vec;
-use std::sync::mpsc::{channel, Sender, SendError, Receiver};
-use log::{info, error};
+use zstream::{Decoder, Encoder};
 
 const INPUT_BUFFER_SIZE: usize = 32 * 1024;
-const ENCODER_BUFFER_SIZE : usize =  1024 * 1024;
+const ENCODER_BUFFER_SIZE: usize = 1024 * 1024;
 
 struct BufferReader {
     id: i64,
@@ -24,13 +24,13 @@ impl Read for BufferReader {
                 let n_data = data.len();
                 self.pending.extend(data);
                 n_data
-            },
+            }
             Err(_) => 0,
         };
 
         //let acum = self.pending.len();
         let to_transfer = min(buf.len(), self.pending.len());
-        let drained : Vec<u8> = self.pending.drain(0..to_transfer).collect();
+        let drained: Vec<u8> = self.pending.drain(0..to_transfer).collect();
         buf[0..to_transfer].copy_from_slice(&drained[0..to_transfer]);
 
         /*info!(
@@ -60,9 +60,11 @@ impl RawDataReader {
         let result = self.reader.borrow_mut().read(temp_buf.as_mut_slice());
         match result {
             Ok(bytes) => {
-                self.inner_buffer.borrow_mut().extend(temp_buf[0..bytes].to_vec());
+                self.inner_buffer
+                    .borrow_mut()
+                    .extend(temp_buf[0..bytes].to_vec());
                 buf.copy_from_slice(temp_buf.as_slice());
-            },
+            }
             _ => (),
         };
 
@@ -88,7 +90,6 @@ impl Read for RawDataWrapper {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         self.reader.read(buf)
     }
-
 }
 
 pub struct Buffer {
@@ -108,18 +109,19 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    pub fn new(id: i64, method:String, uri: String, encoding: Option<&String>) -> Buffer {
+    pub fn new(id: i64, method: String, uri: String, encoding: Option<&String>) -> Buffer {
         let (bytes_sender, bytes_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
-        let (decoder_sender, decoder_receiver) : (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
+        let (decoder_sender, decoder_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
 
-        let data_reader = std::rc::Rc::new(
-            RawDataReader::new(
-                Decoder::new_with_size(
-                    BufferReader { id: id, name: "input reader".to_string(), receiver: decoder_receiver, pending: Vec::<u8>::new() },
-                    INPUT_BUFFER_SIZE
-                )
-            )
-        );
+        let data_reader = std::rc::Rc::new(RawDataReader::new(Decoder::new_with_size(
+            BufferReader {
+                id: id,
+                name: "input reader".to_string(),
+                receiver: decoder_receiver,
+                pending: Vec::<u8>::new(),
+            },
+            INPUT_BUFFER_SIZE,
+        )));
         let wrapper = RawDataWrapper::new(data_reader.clone());
 
         Buffer {
@@ -132,10 +134,7 @@ impl Buffer {
             bytes_total: 0,
             bytes_sender: bytes_sender,
             bytes_receiver: bytes_receiver,
-            encoder: Encoder::new_with_size(
-                wrapper,
-                ENCODER_BUFFER_SIZE
-            ),
+            encoder: Encoder::new_with_size(wrapper, ENCODER_BUFFER_SIZE),
             decoder_sender: decoder_sender,
             error: false,
             data_reader: data_reader,
@@ -144,8 +143,14 @@ impl Buffer {
 
     pub fn done(&mut self) {
         self.is_done = true;
-        info!("Transaction {} is set as done for uri: {}", self.id, self.uri);
-        info!("Data reader contains {} bytes.", self.data_reader.extract().len());
+        info!(
+            "Transaction {} is set as done for uri: {}",
+            self.id, self.uri
+        );
+        info!(
+            "Data reader contains {} bytes.",
+            self.data_reader.extract().len()
+        );
     }
 
     pub fn write_bytes(&mut self, data: &[u8]) {
@@ -157,15 +162,15 @@ impl Buffer {
                     } else {
                         &self.bytes_sender
                     }
-                },
-                None => &self.bytes_sender
+                }
+                None => &self.bytes_sender,
             }
         };
 
         match sender.send(data.to_vec()) {
             Ok(()) => {
                 self.bytes_total += data.len();
-            },
+            }
             Err(SendError(sent)) => {
                 error!("Failed to send {} bytes", sent.len());
             }
