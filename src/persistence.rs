@@ -1,7 +1,7 @@
 use crate::buffer::Buffer;
 use log::warn;
-use std::result::Result;
 use serde::Serialize;
+use std::result::Result;
 
 pub trait Backend {
     fn persist(&self, data: &Buffer) -> Result<(), ()>;
@@ -30,7 +30,13 @@ pub struct Elasticsearch {
 impl Elasticsearch {
     pub fn new(hostname: String, port: i64, protocol: String, index: String) -> Self {
         let client = reqwest::blocking::Client::new();
-        Elasticsearch{ hostname, port, protocol, index, client }
+        Elasticsearch {
+            hostname,
+            port,
+            protocol,
+            index,
+            client,
+        }
     }
 }
 
@@ -48,24 +54,32 @@ impl Backend for Elasticsearch {
             "{}://{}:{}/{}/_doc/{}",
             self.protocol, self.hostname, self.port, self.index, id
         );
-        match self.client.put(endpoint).
-            header("Content-Type", "application/json").
-            body(json).send() {
+        match self
+            .client
+            .put(endpoint)
+            .header("Content-Type", "application/json")
+            .body(json)
+            .send()
+        {
             Ok(response) => {
                 let status = response.status();
-                let request_ok = [
-                    reqwest::StatusCode::OK,
-                    reqwest::StatusCode::CREATED
-                ].contains(&status);
+                let request_ok =
+                    [reqwest::StatusCode::OK, reqwest::StatusCode::CREATED].contains(&status);
                 if !request_ok {
-                    warn!("Failed persisting data for transaction no. {} (http status {})", id, status);
+                    warn!(
+                        "Failed persisting data for transaction no. {} (http status {})",
+                        id, status
+                    );
                 }
                 Ok(())
-            },
+            }
             Err(e) => {
-                warn!("Failed persisting data for transaction no. {} (error: {})", id, e);
+                warn!(
+                    "Failed persisting data for transaction no. {} (error: {})",
+                    id, e
+                );
                 Err(())
-            },
+            }
         }
     }
 }
