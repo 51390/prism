@@ -49,7 +49,7 @@ impl Backend for Elasticsearch {
         );
         let response = self.client.put(target).
             header("Content-Type", "application/json").
-            body(json);
+            body(json).send().unwrap();
         Ok(())
     }
 }
