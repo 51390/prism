@@ -42,21 +42,6 @@ impl Read for BufferReader {
     }
 }
 
-pub struct Buffer {
-    pub id: i64,
-    pub uri: String,
-    pub is_done: bool,
-    pub encoding: Option<String>,
-    pub transfer_chunk: Vec<u8>,
-    pub bytes_total: usize,
-    pub bytes_sender: Sender<Vec<u8>>,
-    pub bytes_receiver: Receiver<Vec<u8>>,
-    pub encoder: Encoder,
-    pub decoder_sender: Sender<Vec<u8>>,
-    pub error: bool,
-    pub data_reader: std::rc::Rc<RawDataReader>,
-}
-
 pub struct RawDataReader {
     pub reader: RefCell<Decoder>,
     inner_buffer: RefCell<Vec<u8>>,
@@ -106,8 +91,24 @@ impl Read for RawDataWrapper {
 
 }
 
+pub struct Buffer {
+    pub id: i64,
+    pub uri: String,
+    pub method: String,
+    pub is_done: bool,
+    pub encoding: Option<String>,
+    pub transfer_chunk: Vec<u8>,
+    pub bytes_total: usize,
+    pub bytes_sender: Sender<Vec<u8>>,
+    pub bytes_receiver: Receiver<Vec<u8>>,
+    pub encoder: Encoder,
+    pub decoder_sender: Sender<Vec<u8>>,
+    pub error: bool,
+    pub data_reader: std::rc::Rc<RawDataReader>,
+}
+
 impl Buffer {
-    pub fn new(id: i64, uri: String, encoding: Option<&String>) -> Buffer {
+    pub fn new(id: i64, uri: String, method:String, encoding: Option<&String>) -> Buffer {
         let (bytes_sender, bytes_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
         let (decoder_sender, decoder_receiver) : (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
 
@@ -125,6 +126,7 @@ impl Buffer {
             id: id,
             uri: uri,
             is_done: false,
+            method: method,
             encoding: encoding.cloned(),
             transfer_chunk: Vec::<u8>::new(),
             bytes_total: 0,
@@ -168,5 +170,9 @@ impl Buffer {
                 error!("Failed to send {} bytes", sent.len());
             }
         }
+    }
+
+    pub fn body(&self) -> String {
+        String::from_utf8(self.data_reader.extract()).unwrap()
     }
 }

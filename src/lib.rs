@@ -1,8 +1,10 @@
 mod mode;
 mod buffer;
+mod persistence;
 
 use mode::Mode;
 use buffer::Buffer;
+use persistence::{Backend, Elasticsearch};
 
 use log::{LevelFilter, info, error};
 use std::boxed::Box;
@@ -110,7 +112,7 @@ pub extern "C" fn uri(id: i64, uri_str: *const c_char, mode: i64, method_str: *c
         Some(headers) => headers.get("Content-Encoding"),
         _ => None,
     };
-    buffers.responses.insert(id, Buffer::new(id, uri.to_string(), encoding));
+    buffers.responses.insert(id, Buffer::new(id, method.to_string(), uri.to_string(), encoding));
 
     info!("Transaction {} initialized with mode {} for {} uri {}", id, Mode::from(mode), method, uri);
 }
@@ -257,7 +259,13 @@ pub extern "C" fn init()  {
 pub extern "C" fn done(id: i64) {
     let buffers = get_buffers();
     match buffers.responses.get_mut(&id) {
-        Some(buffer) => { buffer.done(); },
+        Some(buffer) => { 
+            let backend = persistence::Elasticsearch::new(
+                "es-stack-1".to_string(), 9200, "http".to_string(), "lens".to_string()
+            );
+            backend.persist(buffer);
+            buffer.done();
+        },
         None => ()
     }
 }
