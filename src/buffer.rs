@@ -18,7 +18,6 @@ struct BufferReader {
 
 impl Read for BufferReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        //let pending = self.pending.len();
         let _n_data = match self.receiver.try_recv() {
             Ok(data) => {
                 let n_data = data.len();
@@ -28,15 +27,9 @@ impl Read for BufferReader {
             Err(_) => 0,
         };
 
-        //let acum = self.pending.len();
         let to_transfer = min(buf.len(), self.pending.len());
         let drained: Vec<u8> = self.pending.drain(0..to_transfer).collect();
         buf[0..to_transfer].copy_from_slice(&drained[0..to_transfer]);
-
-        /*info!(
-            "BF({}) -> {} pending; {} in; {} acum; {} transfer; {} drained; {} left.",
-            self.name, pending, n_data, acum, to_transfer, drained.len(), self.pending.len()
-        );*/
 
         Ok(to_transfer)
     }
@@ -146,10 +139,6 @@ impl Buffer {
         info!(
             "Transaction {} is set as done for uri: {}",
             self.id, self.uri
-        );
-        info!(
-            "Data reader contains {} bytes.",
-            self.data_reader.extract().len()
         );
     }
 
