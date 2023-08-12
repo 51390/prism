@@ -71,8 +71,10 @@ impl Backend for Elasticsearch {
                         "Failed persisting data for transaction no. {} (http status {})",
                         id, status
                     );
+                    Err(())
+                } else {
+                    Ok(())
                 }
-                Ok(())
             }
             Err(e) => {
                 warn!(
