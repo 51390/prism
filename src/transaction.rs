@@ -10,9 +10,7 @@ const INPUT_BUFFER_SIZE: usize = 32 * 1024;
 const ENCODER_BUFFER_SIZE: usize = 1024 * 1024;
 
 struct BufferReader {
-    id: i64,
     receiver: Receiver<Vec<u8>>,
-    name: String,
     pending: Vec<u8>,
 }
 
@@ -108,8 +106,6 @@ impl Transaction {
 
         let data_reader = std::rc::Rc::new(RawDataReader::new(Decoder::new_with_size(
             BufferReader {
-                id: id,
-                name: "input reader".to_string(),
                 receiver: decoder_receiver,
                 pending: Vec::<u8>::new(),
             },
