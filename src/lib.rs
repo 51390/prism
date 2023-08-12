@@ -8,13 +8,13 @@ use std::ptr::null;
 use std::sync::Once;
 use syslog::{BasicLogger, Facility, Formatter3164, Logger, LoggerBackend};
 
-use transaction::Transaction;
 use mode::Mode;
 use persistence::{Backend, Elasticsearch};
+use transaction::Transaction;
 
-mod transaction;
 mod mode;
 mod persistence;
+mod transaction;
 
 static mut TRANSACTIONS: Option<Transactions> = None;
 static ONCE_TRANSACTIONS: Once = Once::new();
