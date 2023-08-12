@@ -1,11 +1,3 @@
-mod buffer;
-mod mode;
-mod persistence;
-
-use buffer::Buffer;
-use mode::Mode;
-use persistence::{Backend, Elasticsearch};
-
 use log::{error, info, LevelFilter};
 use std::boxed::Box;
 use std::collections::HashMap;
@@ -15,6 +7,14 @@ use std::io::prelude::*;
 use std::ptr::null;
 use std::sync::Once;
 use syslog::{BasicLogger, Facility, Formatter3164, Logger, LoggerBackend};
+
+use buffer::Buffer;
+use mode::Mode;
+use persistence::{Backend, Elasticsearch};
+
+mod buffer;
+mod mode;
+mod persistence;
 
 static mut BUFFERS: Option<Buffers> = None;
 static ONCE_BUFFERS: Once = Once::new();
