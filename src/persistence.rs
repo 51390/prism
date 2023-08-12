@@ -12,6 +12,7 @@ struct Document {
     method: String,
     uri: String,
     body: String,
+    encoding: String,
 }
 
 /// Elasticsearch persistence backend.
@@ -48,6 +49,10 @@ impl Backend for Elasticsearch {
             method: data.method.clone(),
             uri: data.uri.clone(),
             body: body,
+            encoding: match &data.encoding {
+                Some(encoding) => encoding.to_string(),
+                None => "".to_string(),
+            },
         };
         let json = serde_json::to_string(&document).unwrap();
         let id = data.id;
