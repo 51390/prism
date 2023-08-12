@@ -85,7 +85,7 @@ impl Read for RawDataWrapper {
     }
 }
 
-pub struct Buffer {
+pub struct Transaction {
     pub id: i64,
     pub uri: String,
     pub method: String,
@@ -101,8 +101,8 @@ pub struct Buffer {
     pub data_reader: std::rc::Rc<RawDataReader>,
 }
 
-impl Buffer {
-    pub fn new(id: i64, method: String, uri: String, encoding: Option<&String>) -> Buffer {
+impl Transaction {
+    pub fn new(id: i64, method: String, uri: String, encoding: Option<&String>) -> Self {
         let (bytes_sender, bytes_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
         let (decoder_sender, decoder_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
 
@@ -117,7 +117,7 @@ impl Buffer {
         )));
         let wrapper = RawDataWrapper::new(data_reader.clone());
 
-        Buffer {
+        Transaction {
             id: id,
             uri: uri,
             is_done: false,

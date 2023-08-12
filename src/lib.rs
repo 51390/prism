@@ -8,16 +8,16 @@ use std::ptr::null;
 use std::sync::Once;
 use syslog::{BasicLogger, Facility, Formatter3164, Logger, LoggerBackend};
 
-use buffer::Buffer;
+use transaction::Transaction;
 use mode::Mode;
 use persistence::{Backend, Elasticsearch};
 
-mod buffer;
+mod transaction;
 mod mode;
 mod persistence;
 
-static mut BUFFERS: Option<Buffers> = None;
-static ONCE_BUFFERS: Once = Once::new();
+static mut TRANSACTIONS: Option<Transactions> = None;
+static ONCE_TRANSACTIONS: Once = Once::new();
 
 const OUTPUT_BUFFER_SIZE: usize = 1024 * 1024;
 
@@ -51,28 +51,28 @@ pub struct Chunk {
     bytes: *const c_void,
 }
 
-struct Buffers {
-    responses: HashMap<i64, Buffer>,
+struct Transactions {
+    responses: HashMap<i64, Transaction>,
     headers: HashMap<i64, HashMap<String, String>>,
 }
 
-impl Instance<Buffers> for Buffers {
-    fn new() -> Option<Buffers> {
-        Some(Buffers {
+impl Instance<Transactions> for Transactions {
+    fn new() -> Option<Transactions> {
+        Some(Transactions {
             responses: HashMap::new(),
             headers: HashMap::new(),
         })
     }
 }
 
-fn get_buffers() -> &'static mut Buffers {
+fn get_buffers() -> &'static mut Transactions {
     unsafe {
-        ONCE_BUFFERS.call_once(|| {
-            BUFFERS = Buffers::new();
+        ONCE_TRANSACTIONS.call_once(|| {
+            TRANSACTIONS = Transactions::new();
         });
-        match &mut BUFFERS {
+        match &mut TRANSACTIONS {
             Some(b) => b,
-            None => panic!("Buffers not available"),
+            None => panic!("Transactions not available"),
         }
     }
 }
@@ -124,7 +124,7 @@ pub extern "C" fn uri(id: i64, uri_str: *const c_char, mode: i64, method_str: *c
     };
     buffers.responses.insert(
         id,
-        Buffer::new(id, method.to_string(), uri.to_string(), encoding),
+        Transaction::new(id, method.to_string(), uri.to_string(), encoding),
     );
 
     info!(

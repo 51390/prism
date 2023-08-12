@@ -1,10 +1,10 @@
-use crate::buffer::Buffer;
+use crate::transaction::Transaction;
 use log::warn;
 use serde::Serialize;
 use std::result::Result;
 
 pub trait Backend {
-    fn persist(&self, data: &Buffer) -> Result<(), ()>;
+    fn persist(&self, data: &Transaction) -> Result<(), ()>;
 }
 
 #[derive(Serialize)]
@@ -24,6 +24,7 @@ pub struct Elasticsearch {
     protocol: String,
     /// Index name to use as storage
     index: String,
+    /// Client used to communicate with ES.
     client: reqwest::blocking::Client,
 }
 
@@ -41,7 +42,7 @@ impl Elasticsearch {
 }
 
 impl Backend for Elasticsearch {
-    fn persist(&self, data: &Buffer) -> Result<(), ()> {
+    fn persist(&self, data: &Transaction) -> Result<(), ()> {
         let body = data.body();
         let document = Document {
             method: data.method.clone(),
