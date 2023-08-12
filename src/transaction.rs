@@ -162,7 +162,7 @@ impl Transaction {
         }
     }
 
-    pub fn body(&self) -> String {
-        String::from_utf8(self.data_reader.extract()).unwrap()
+    pub fn body(&self) -> Vec<u8> {
+        self.data_reader.extract()
     }
 }

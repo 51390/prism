@@ -44,7 +44,10 @@ impl Elasticsearch {
 
 impl Backend for Elasticsearch {
     fn persist(&self, data: &Transaction) -> Result<(), ()> {
-        let body = data.body();
+        let body = match String::from_utf8(data.body()) {
+            Ok(body) => body,
+            Err(_) => "".to_string(),
+        };
         let document = Document {
             method: data.method.clone(),
             uri: data.uri.clone(),
