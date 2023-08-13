@@ -118,7 +118,7 @@ impl Elasticsearch {
     }
 
     fn date(&self) -> String {
-        Utc::now().format("%Y-%m-%dT%H:%M:SZ").to_string()
+        Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
     }
 
     fn raw_body(&self, body: &Vec<u8>) -> String {
