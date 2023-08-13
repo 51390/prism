@@ -1,4 +1,6 @@
+use base64::{engine::general_purpose, Engine};
 use crate::transaction::Transaction;
+use chrono::Utc;
 use log::warn;
 use serde::Serialize;
 use std::result::Result;
@@ -12,7 +14,9 @@ struct Document {
     method: String,
     uri: String,
     body: String,
+    raw_body: String,
     encoding: String,
+    date: String,
 }
 
 static mut ELASTICSEARCH_INITIALIZED: bool = false;
@@ -109,6 +113,14 @@ impl Elasticsearch {
 
         self
     }
+
+    fn date(&self) -> String {
+        Utc::now().format("%Y-%m-%dY%H:%M:SZ").to_string()
+    }
+
+    fn raw_body(&self, body: &Vec<u8>) -> String {
+        general_purpose::STANDARD.encode(body)
+    }
 }
 
 impl Backend for Elasticsearch {
@@ -117,18 +129,20 @@ impl Backend for Elasticsearch {
             return Err(());
         }
 
-        let body = match String::from_utf8(data.body()) {
+        let decoded_body = match String::from_utf8(data.body()) {
             Ok(body) => body,
             Err(_) => "".to_string(),
         };
         let document = Document {
             method: data.method.clone(),
             uri: data.uri.clone(),
-            body: body,
+            raw_body: self.raw_body(&data.body()),
+            body: decoded_body,
             encoding: match &data.encoding {
                 Some(encoding) => encoding.to_string(),
                 None => "".to_string(),
             },
+            date: self.date(),
         };
         let json = serde_json::to_string(&document).unwrap();
         let id = format!("{}-{}", self.generation, data.id);
