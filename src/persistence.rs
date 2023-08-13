@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::result::Result;
 
 pub trait Backend {
-    fn persist(&self, data: &Transaction) -> Result<(), ()>;
+    fn persist(&self, transaction: &Transaction) -> Result<(), ()>;
 }
 
 #[derive(Serialize)]
@@ -101,13 +101,16 @@ impl Elasticsearch {
             Ok(response) => {
                 let status = response.status();
                 if status != reqwest::StatusCode::OK {
-                    warn!("Failed initializing elasticsearch backend, calls to persist data will fail (http {}) : {}", status, response.text().unwrap());
+                    warn!(
+                        "Failed initializing elasticsearch backend, calls to persist transaction will fail (http {}) : {}",
+                        status, response.text().unwrap()
+                    );
                 } else {
                     unsafe { ELASTICSEARCH_INITIALIZED = true };
                 }
             }
             Err(err) => {
-                warn!("Failed initializing elasticsearch backend, calls to persist data will fail: {}", err);
+                warn!("Failed initializing elasticsearch backend, calls to persist transaction will fail: {}", err);
             }
         }
 
@@ -124,28 +127,28 @@ impl Elasticsearch {
 }
 
 impl Backend for Elasticsearch {
-    fn persist(&self, data: &Transaction) -> Result<(), ()> {
+    fn persist(&self, transaction: &Transaction) -> Result<(), ()> {
         if !unsafe { ELASTICSEARCH_INITIALIZED } {
             return Err(());
         }
 
-        let decoded_body = match String::from_utf8(data.body()) {
+        let decoded_body = match String::from_utf8(transaction.body()) {
             Ok(body) => body,
             Err(_) => "".to_string(),
         };
         let document = Document {
-            method: data.method.clone(),
-            uri: data.uri.clone(),
-            raw_body: self.raw_body(&data.body()),
+            method: transaction.method.clone(),
+            uri: transaction.uri.clone(),
+            raw_body: self.raw_body(&transaction.body()),
             body: decoded_body,
-            encoding: match &data.encoding {
+            encoding: match &transaction.encoding {
                 Some(encoding) => encoding.to_string(),
                 None => "".to_string(),
             },
             date: self.date(),
         };
         let json = serde_json::to_string(&document).unwrap();
-        let id = format!("{}-{}", self.generation, data.id);
+        let id = format!("{}-{}", self.generation, transaction.id);
         let endpoint = format!(
             "{}://{}:{}/{}/_doc/{}",
             self.protocol, self.hostname, self.port, self.index, id
@@ -163,8 +166,10 @@ impl Backend for Elasticsearch {
                     [reqwest::StatusCode::OK, reqwest::StatusCode::CREATED].contains(&status);
                 if !request_ok {
                     warn!(
-                        "Failed persisting data for transaction no. {} (http status {})",
-                        id, status
+                        "Failed persisting transaction for transaction no. {} (http status {}): {}",
+                        id,
+                        status,
+                        response.text().unwrap()
                     );
                     Err(())
                 } else {
@@ -173,7 +178,7 @@ impl Backend for Elasticsearch {
             }
             Err(err) => {
                 warn!(
-                    "Failed persisting data for transaction no. {} (error: {})",
+                    "Failed persisting transaction for transaction no. {} (error: {})",
                     id, err
                 );
                 Err(())
