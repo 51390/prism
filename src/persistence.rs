@@ -42,7 +42,10 @@ pub struct Elasticsearch {
 impl Elasticsearch {
     pub fn new(hostname: String, port: i64, protocol: String, index: String) -> Self {
         let generation = std::time::UNIX_EPOCH.elapsed().unwrap().as_millis();
-        let client = reqwest::blocking::Client::new();
+        let client = reqwest::blocking::ClientBuilder::new()
+            .danger_accept_invalid_certs(true)
+            .build()
+            .unwrap();
         let backend = Elasticsearch {
             hostname,
             port,
