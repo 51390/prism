@@ -304,9 +304,9 @@ pub extern "C" fn done(id: i64) {
     match buffers.responses.get_mut(&id) {
         Some(buffer) => {
             let backend = Elasticsearch::new(
-                "es-stack-1".to_string(),
+                "admin:admin@search".to_string(),
                 9200,
-                "http".to_string(),
+                "https".to_string(),
                 "lens".to_string(),
             );
             match backend.persist(buffer) {
