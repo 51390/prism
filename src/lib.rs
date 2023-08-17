@@ -305,7 +305,7 @@ pub extern "C" fn done(id: i64) {
         Some(buffer) => {
             let backend = Elasticsearch::new(
                 "admin:admin@search".to_string(),
-                9201,
+                9200,
                 "https".to_string(),
                 "lens".to_string(),
             );
