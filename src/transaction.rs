@@ -6,6 +6,8 @@ use std::sync::mpsc::{channel, Receiver, SendError, Sender};
 use std::vec::Vec;
 use zstream::{Decoder, Encoder};
 
+use crate::mode::Mode;
+
 const INPUT_BUFFER_SIZE: usize = 32 * 1024;
 const ENCODER_BUFFER_SIZE: usize = 1024 * 1024;
 
@@ -87,6 +89,7 @@ pub struct Transaction {
     pub id: i64,
     pub uri: String,
     pub method: String,
+    pub mode: Mode,
     pub is_done: bool,
     pub encoding: Option<String>,
     pub transfer_chunk: Vec<u8>,
@@ -100,7 +103,13 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn new(id: i64, method: String, uri: String, encoding: Option<&String>) -> Self {
+    pub fn new(
+        id: i64,
+        method: String,
+        uri: String,
+        encoding: Option<&String>,
+        mode: Mode,
+    ) -> Self {
         let (bytes_sender, bytes_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
         let (decoder_sender, decoder_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
 
@@ -118,6 +127,7 @@ impl Transaction {
             uri: uri,
             is_done: false,
             method: method,
+            mode: mode,
             encoding: encoding.cloned(),
             transfer_chunk: Vec::<u8>::new(),
             bytes_total: 0,

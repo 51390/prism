@@ -19,8 +19,8 @@ impl From<i64> for Mode {
 impl Display for Mode {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let value = match self {
-            Mode::REQMOD => "0",
-            Mode::RESPMOD => "1",
+            Mode::REQMOD => "REQMOD",
+            Mode::RESPMOD => "RESPMOD",
             Mode::UNKNOWN => "UNKNOWN",
         };
         write!(f, "{}", value)

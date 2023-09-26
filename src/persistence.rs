@@ -12,6 +12,7 @@ pub trait Backend {
 #[derive(Serialize)]
 struct Document {
     method: String,
+    mode: String,
     uri: String,
     body: String,
     raw_body: String,
@@ -85,6 +86,7 @@ impl Elasticsearch {
             "mappings": {
                 "properties": {
                     "method": {"type": "keyword"},
+                    "mode": {"type": "keyword"},
                     "uri": {"type": "text", "analyzer": "simple"},
                     "encoding": {"type": "keyword"},
                     "body": {"type": "text"},
@@ -140,6 +142,7 @@ impl Backend for Elasticsearch {
             Err(_) => "".to_string(),
         };
         let document = Document {
+            mode: transaction.mode.to_string(),
             method: transaction.method.clone(),
             uri: transaction.uri.clone(),
             raw_body: self.raw_body(&transaction.body()),

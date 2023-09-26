@@ -124,7 +124,13 @@ pub extern "C" fn uri(id: i64, uri_str: *const c_char, mode: i64, method_str: *c
     };
     buffers.responses.insert(
         id,
-        Transaction::new(id, method.to_string(), uri.to_string(), encoding),
+        Transaction::new(
+            id,
+            method.to_string(),
+            uri.to_string(),
+            encoding,
+            Mode::from(mode),
+        ),
     );
 
     info!(
