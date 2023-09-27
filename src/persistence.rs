@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::result::Result;
 
 pub trait Backend {
-    fn persist(&self, transaction: &Transaction) -> Result<(), ()>;
+    fn persist(&self, transaction: &Transaction, host: String) -> Result<(), ()>;
 }
 
 #[derive(Serialize)]
@@ -18,6 +18,7 @@ struct Document {
     raw_body: String,
     encoding: String,
     date: String,
+    host: String,
 }
 
 static mut ELASTICSEARCH_INITIALIZED: bool = false;
@@ -132,7 +133,7 @@ impl Elasticsearch {
 }
 
 impl Backend for Elasticsearch {
-    fn persist(&self, transaction: &Transaction) -> Result<(), ()> {
+    fn persist(&self, transaction: &Transaction, host: String) -> Result<(), ()> {
         if !unsafe { ELASTICSEARCH_INITIALIZED } {
             return Err(());
         }
@@ -152,6 +153,7 @@ impl Backend for Elasticsearch {
                 None => "".to_string(),
             },
             date: self.date(),
+            host: host,
         };
         let json = serde_json::to_string(&document).unwrap();
         let id = format!("{}-{}", self.generation, transaction.id);

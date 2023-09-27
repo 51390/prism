@@ -307,15 +307,23 @@ pub extern "C" fn init() {
 #[no_mangle]
 pub extern "C" fn done(id: i64) {
     let buffers = get_buffers();
+    let host = match buffers.headers.get(&id) {
+        Some(headers) => match headers.get("Host") {
+            Some(host) => host.clone(),
+            None => "".to_string(),
+        },
+        None => "".to_string(),
+    };
     match buffers.responses.get_mut(&id) {
         Some(buffer) => {
+            // fixme: extract to static or other external ref
             let backend = Elasticsearch::new(
                 "admin:admin@search".to_string(),
                 9200,
                 "https".to_string(),
                 "lens".to_string(),
             );
-            match backend.persist(buffer) {
+            match backend.persist(buffer, host) {
                 Ok(()) => {}
                 Err(()) => {}
             }
